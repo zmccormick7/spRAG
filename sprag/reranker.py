@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 import cohere
 import os
+from scipy.stats import beta
+
 
 class Reranker(ABC):
     subclasses = {}
@@ -33,6 +35,12 @@ class CohereReranker(Reranker):
         cohere_api_key = os.environ['CO_API_KEY']
         self.client = cohere.Client(f'{cohere_api_key}')
 
+    # transformation function to map the absolute relevance value to a value that is more uniformly distributed between 0 and 1
+    def transform(self, x):
+        # these parameters are currrently tuned for the Cohere v3 reranker
+        a, b = 0.4, 0.4  # These can be adjusted to change the distribution shape
+        return beta.cdf(x, a, b)
+
     def rerank_search_results(self, query: str, search_results: list) -> list:
         """
         Use Cohere Rerank API to rerank the search results
@@ -41,7 +49,10 @@ class CohereReranker(Reranker):
         reranked_results = self.client.rerank(model=self.model, query=query, documents=documents)
         results = reranked_results.results
         reranked_indices = [result.index for result in results]
+        reranked_similarity_scores = [result.relevance_score for result in results]
         reranked_search_results = [search_results[i] for i in reranked_indices]
+        for i, result in enumerate(reranked_search_results):
+            result['similarity'] = self.transform(reranked_similarity_scores[i])
         return reranked_search_results
     
     def to_dict(self):
