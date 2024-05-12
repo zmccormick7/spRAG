@@ -35,8 +35,11 @@ class CohereReranker(Reranker):
         cohere_api_key = os.environ['CO_API_KEY']
         self.client = cohere.Client(f'{cohere_api_key}')
 
-    # transformation function to map the absolute relevance value to a value that is more uniformly distributed between 0 and 1
     def transform(self, x):
+        """
+        transformation function to map the absolute relevance value to a value that is more uniformly distributed between 0 and 1
+        - this is critical for the new version of RSE to work properly, because it utilizes the absolute relevance values to calculate the similarity scores
+        """
         # these parameters are currrently tuned for the Cohere v3 reranker
         a, b = 0.4, 0.4  # These can be adjusted to change the distribution shape
         return beta.cdf(x, a, b)
@@ -63,8 +66,21 @@ class CohereReranker(Reranker):
         return base_dict
     
 class NoReranker(Reranker):
+    def __init__(self, ignore_absolute_relevance: bool = False):
+        """
+        - ignore_absolute_relevance: if True, the reranker will override the absolute relevance values and assign a default similarity score to each chunk. This is useful when using an embedding model where the absolute relevance values are not reliable or meaningful.
+        """
+        self.ignore_absolute_relevance = ignore_absolute_relevance
+
     def rerank_search_results(self, query: str, search_results: list) -> list:
+        if self.ignore_absolute_relevance:
+            for result in search_results:
+                result['similarity'] = 0.8 # default similarity score (represents a moderately relevant chunk)
         return search_results
 
     def to_dict(self):
-        return super().to_dict()
+        base_dict = super().to_dict()
+        base_dict.update({
+            'ignore_absolute_relevance': self.ignore_absolute_relevance,
+        })
+        return base_dict

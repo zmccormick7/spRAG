@@ -67,7 +67,7 @@ def get_best_segments(all_relevance_values: list[list], document_splits: list[in
     
     return best_segments, scores
 
-def get_meta_document(all_ranked_results: list[list], top_k_for_document_selection: int = 7):
+def get_meta_document(all_ranked_results: list[list], top_k_for_document_selection: int):
     # get the top_k results for each query - and the document IDs for the top results across all queries
     top_document_ids = []
     for ranked_results in all_ranked_results:
@@ -109,8 +109,8 @@ def get_relevance_values(all_ranked_results: list[list], meta_document_length: i
     # get the relevance values for each chunk in the meta-document, separately for each query
     all_relevance_values = []
     for ranked_results in all_ranked_results:
-        # print similarity scores
-        print([result["similarity"] for result in ranked_results[:20]])
+        #print([result["similarity"] for result in ranked_results[:20]]) # print the similarity scores for the top results for each query
+        
         # loop through the top results for each query and add their rank to the relevance ranks list
         all_chunk_info = [{} for _ in range(meta_document_length)]
         for rank, result in enumerate(ranked_results):
@@ -127,7 +127,7 @@ def get_relevance_values(all_ranked_results: list[list], meta_document_length: i
         relevance_values = [get_chunk_value(chunk_info, irrelevant_chunk_penalty, decay_rate) for chunk_info in all_chunk_info]
         all_relevance_values.append(relevance_values)
 
-        print ("Relevance values")
-        print ([round(value, 4) for value in relevance_values])
+        #print ("Relevance values")
+        #print ([round(value, 4) for value in relevance_values])
     
     return all_relevance_values
