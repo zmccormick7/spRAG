@@ -9,7 +9,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 from sprag.knowledge_base import KnowledgeBase
 from sprag.auto_query import get_search_queries
 from sprag.llm import OpenAIChatAPI, AnthropicChatAPI
-from tests.integration.rse_w_abs_relevance import KnowledgeBaseRSE
 
 AUTO_QUERY_GUIDANCE = """
 The knowledge base contains SEC filings for publicly traded companies, like 10-Ks, 10-Qs, and 8-Ks. Keep this in mind when generating search queries. The things you search for should be things that are likely to be found in these documents.
@@ -46,22 +45,22 @@ questions = df.question.tolist()
 answers = df.answer.tolist()
 
 # load the knowledge base
-kb = KnowledgeBaseRSE("finance_bench")
+kb = KnowledgeBase("finance_bench")
 
 # set parameters for relevant segment extraction
 rse_params = {
-    'max_length': 20,
-    'overall_max_length': 40,
-    'overall_max_length_extension': 10,
-    'irrelevant_chunk_penalty': 0.12,
-    'minimum_value': 1.0,
+    'max_length': 10,
+    'overall_max_length': 20,
+    'overall_max_length_extension': 5,
+    'irrelevant_chunk_penalty': 0.18,
+    'minimum_value': 0.8,
 }
 
 # open text file to write results
 with open("finance_bench_results.txt", "w") as f:
 
     # adjust range if you only want to run a subset of the questions (there are 150 total)
-    for i in [2, 5, 10, 16, 23]: #range(4, 6):
+    for i in range(1):
         print (f"Question {i+1}")
         question = questions[i]
         answer = answers[i]
