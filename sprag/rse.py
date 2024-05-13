@@ -121,13 +121,30 @@ def get_relevance_values(all_ranked_results: list[list], meta_document_length: i
             chunk_index = int(result["metadata"]["chunk_index"])
             meta_document_index = int(document_start_points[document_id] + chunk_index) # find the correct index for this chunk in the meta-document
             absolute_relevance_value = result["similarity"]
-            all_chunk_info[meta_document_index] = {'rank': rank, 'absolute_relevance_value': absolute_relevance_value}
+            chunk_length = len(result["metadata"]["chunk_text"]) # get the length of the chunk in characters
+            all_chunk_info[meta_document_index] = {'rank': rank, 'absolute_relevance_value': absolute_relevance_value, 'chunk_length': chunk_length}
 
         # convert the relevance ranks and other info to chunk values
         relevance_values = [get_chunk_value(chunk_info, irrelevant_chunk_penalty, decay_rate) for chunk_info in all_chunk_info]
+
+        # adjust the relevance values for the length of the chunks
+        chunk_lengths = [chunk_info.get('chunk_length', 0.0) for chunk_info in all_chunk_info]
+        relevance_values = adjust_relevance_values_for_chunk_length(relevance_values, chunk_lengths)
+
         all_relevance_values.append(relevance_values)
 
-        #print ("Relevance values")
+        #print ("Adjusted relevance values")
         #print ([round(value, 4) for value in relevance_values])
     
     return all_relevance_values
+
+def adjust_relevance_values_for_chunk_length(relevance_values: list[float], chunk_lengths: list[int], reference_length: int = 700):
+    """
+    Scale the chunk values by chunk length relative to the reference length
+    - reference_length is the length of a standard chunk, measured in number of characters
+    """
+    assert len(relevance_values) == len(chunk_lengths), "The length of relevance_values and chunk_lengths must be the same"
+    adjusted_relevance_values = []
+    for relevance_value, chunk_length in zip(relevance_values, chunk_lengths):
+        adjusted_relevance_values.append(relevance_value * (chunk_length / reference_length))
+    return adjusted_relevance_values
